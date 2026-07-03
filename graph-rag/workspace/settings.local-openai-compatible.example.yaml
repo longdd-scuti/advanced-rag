@@ -1,0 +1,42 @@
+### Example settings for running GraphRAG against a local OpenAI-compatible API.
+###
+### Typical local servers:
+### - Ollama OpenAI-compatible endpoint: http://127.0.0.1:11434/v1
+### - LM Studio local server: http://127.0.0.1:1234/v1
+### - vLLM OpenAI-compatible server: http://127.0.0.1:8001/v1
+###
+### Copy the relevant model sections into workspace/settings.yaml after your
+### local model server is running. Keep workspace/settings.yaml as the real
+### runtime config; this file is only a reference.
+
+completion_models:
+  default_completion_model:
+    model_provider: openai
+    model: ${LOCAL_CHAT_MODEL}
+    auth_method: api_key
+    api_key: ${LOCAL_LLM_API_KEY}
+    api_base: ${LOCAL_LLM_API_BASE}
+    retry:
+      type: exponential_backoff
+      max_retries: 3
+    call_args:
+      temperature: 0
+
+embedding_models:
+  default_embedding_model:
+    model_provider: openai
+    model: ${LOCAL_EMBEDDING_MODEL}
+    auth_method: api_key
+    api_key: ${LOCAL_LLM_API_KEY}
+    api_base: ${LOCAL_EMBEDDING_API_BASE}
+    retry:
+      type: exponential_backoff
+      max_retries: 3
+
+### Suggested .env additions for a local OpenAI-compatible server:
+###
+### LOCAL_LLM_API_BASE=http://127.0.0.1:11434/v1
+### LOCAL_EMBEDDING_API_BASE=http://127.0.0.1:11434/v1
+### LOCAL_LLM_API_KEY=local
+### LOCAL_CHAT_MODEL=qwen2.5:7b
+### LOCAL_EMBEDDING_MODEL=nomic-embed-text

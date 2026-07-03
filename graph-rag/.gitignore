@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+workspace/.env
+workspace/cache/
+workspace/logs/
+workspace/output/
+workspace/update_output/
+workspace/stats/
+

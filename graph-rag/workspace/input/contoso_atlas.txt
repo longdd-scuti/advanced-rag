@@ -1,0 +1,9 @@
+Contoso Analytics builds internal tools for retail operations teams.
+
+The Atlas product helps store managers monitor inventory risk, late supplier shipments,
+and regional sales anomalies. Atlas integrates with warehouse systems, point-of-sale
+events, and employee task queues.
+
+Mira Patel leads the Atlas data platform. Jonah Reed owns supplier integrations.
+The operations team uses GraphRAG to connect incidents, stores, suppliers, and product
+categories so analysts can ask broader questions about recurring business issues.
