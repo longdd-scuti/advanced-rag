@@ -1,0 +1,1 @@
+"""Normal RAG FastAPI demo."""
