@@ -12,8 +12,7 @@ from fastapi import HTTPException, status
 # All GraphRAG CLI commands are run against this local workspace. Keeping the
 # GraphRAG root separate from the API code makes it easy to reset/re-index data.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WORKSPACE_ROOT = PROJECT_ROOT / "workspace"
-INPUT_DIR = WORKSPACE_ROOT / "input"
+WORKSPACE_SOURCES_ROOT = PROJECT_ROOT / "workspace_sources"
 
 
 def find_graphrag_cli() -> str:
@@ -38,6 +37,15 @@ def find_graphrag_cli() -> str:
     if next_to_python.exists():
         return str(next_to_python)
 
+    local_venv = (
+        PROJECT_ROOT
+        / ".venv"
+        / ("Scripts" if os.name == "nt" else "bin")
+        / executable_name
+    )
+    if local_venv.exists():
+        return str(local_venv)
+
     discovered = shutil.which("graphrag")
     if discovered:
         return discovered
@@ -51,11 +59,15 @@ def find_graphrag_cli() -> str:
     )
 
 
-def run_graphrag(args: list[str], timeout_seconds: int | None = None) -> dict[str, str | int]:
+def run_graphrag(
+    args: list[str],
+    workspace_root: Path,
+    timeout_seconds: int | None = None,
+) -> dict[str, str | int]:
     """Run a GraphRAG CLI command and return stdout/stderr for API debugging."""
 
-    WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
-    INPUT_DIR.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (workspace_root / "input").mkdir(parents=True, exist_ok=True)
 
     # Keep command construction as a list. This avoids shell quoting issues and
     # prevents user-provided query text from being interpreted as shell syntax.

@@ -3,44 +3,82 @@
 Demo nay boc Microsoft GraphRAG CLI bang FastAPI. Luong chay theo tai lieu chinh thuc:
 
 1. Cai `graphrag`.
-2. Chay `graphrag init`.
-3. Dat file `.txt` vao `workspace/input`.
-4. Chay `graphrag index`.
-5. Query bang `graphrag query`.
+2. Tao workspace rieng cho tung source tai `workspace_sources/<source>`.
+3. Dat file `.txt` vao `workspace_sources/<source>/input`.
+4. Chay `graphrag index` rieng cho tung source.
+5. Query bang `source` tuong ung.
 
 Tai lieu tham khao: <https://microsoft.github.io/graphrag/get_started/>
 
 ## Cai dat
 
-Tren Windows, nen dat venv o path ngan vi dependency cua GraphRAG co mot so file
-path rat sau. Cai trong `.venv` nam ben duoi project dai co the cham loi
-`No such file or directory` khi pip cai `litellm`.
+Tren Windows, tao virtual environment truc tiep trong project. Thu muc `.venv`
+da nam trong `.gitignore`, nen khong bi commit len git.
 
-```powershell
-cd C:\Users\Admin\DATA\Projects\my_seft\advanced-rag\graph-rag
-python -m venv C:\venvs\advanced-rag-graphrag
-C:\venvs\advanced-rag-graphrag\Scripts\Activate.ps1
+```cmd
+cd D:\workspaces\self_git\advanced-rag\graph-rag
+python -m venv .venv
+.venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## Khoi tao GraphRAG workspace
-
-Workspace demo da duoc init trong `workspace` voi `gpt-4.1-mini` va
-`text-embedding-3-small`. Neu muon tao lai config:
+Neu chay bang PowerShell va lenh activate tren khong duoc nhan, dung:
 
 ```powershell
-graphrag init --root .\workspace --model gpt-4.1-mini --embedding text-embedding-3-small --force
+.\.venv\Scripts\Activate.ps1
 ```
 
-Sau khi init, sua `workspace\.env`:
+## Khoi tao GraphRAG workspace
+
+API bat buoc truyen `source` khi thao tac voi workspace. Moi source la mot
+workspace con trong `workspace_sources`.
+
+Repo da chuan bi san 2 source mau:
+
+```text
+workspace_sources\book\input\book.txt
+workspace_sources\contoso_atlas\input\contoso_atlas.txt
+```
+
+Neu muon tao source moi, vi du `my_source`:
+
+```powershell
+New-Item -ItemType Directory -Force .\workspace_sources\my_source\input
+Copy-Item .\templates\settings.yaml .\workspace_sources\my_source\settings.yaml
+Copy-Item .\templates\.env.example .\workspace_sources\my_source\.env
+Copy-Item .\my_source.txt .\workspace_sources\my_source\input\my_source.txt
+```
+
+Moi source can co `.env` rieng. Voi Ollama local, cac bien chinh la:
 
 ```dotenv
-GRAPHRAG_API_KEY=<YOUR_OPENAI_OR_AZURE_OPENAI_KEY>
+LOCAL_LLM_API_BASE=http://127.0.0.1:11434/v1
+LOCAL_EMBEDDING_API_BASE=http://127.0.0.1:11434/v1
+LOCAL_LLM_API_KEY=local
+LOCAL_INDEX_CHAT_MODEL=qwen3:8b
+LOCAL_QUERY_CHAT_MODEL=qwen3:14b
+LOCAL_EMBEDDING_MODEL=nomic-embed-text
 ```
 
-Neu muon dung model re hon cho demo, co the init qua API voi `gpt-4.1-mini` va
-`text-embedding-3-small`.
+## Index rieng tung source
+
+Chay index cho tung source:
+
+```powershell
+graphrag index --root .\workspace_sources\book --method fast --cache
+graphrag index --root .\workspace_sources\contoso_atlas --method fast --cache
+```
+
+Hoac qua API:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:8000/index `
+  -ContentType "application/json" `
+  -Body '{"source":"book","method":"fast","verbose":true,"cache":true,"timeout_seconds":3600}'
+```
 
 ## Chay FastAPI
 
@@ -62,7 +100,8 @@ API cloud.
 Huong nen di:
 
 - Dung mot OpenAI-compatible local server nhu Ollama, LM Studio hoac vLLM.
-- Bat dau voi model instruct 7B/8B hoac 14B quantized, temperature 0.
+- Dung `qwen3:8b` cho indexing de nhanh hon, va `qwen3:14b` cho query de
+  cau tra loi tot hon.
 - Embedding nen dung model embedding rieng, vi chat model khong phai luc nao cung
   co endpoint embedding tot.
 - Bat dau voi `method: fast`, input nho, roi moi tang kich thuoc du lieu.
@@ -72,17 +111,18 @@ Huong nen di:
 File mau cho local OpenAI-compatible server:
 
 ```text
-workspace\settings.local-openai-compatible.example.yaml
+templates\settings.local-openai-compatible.example.yaml
 ```
 
-Them cac bien nay vao `workspace\.env`, roi copy 2 block `completion_models` va
-`embedding_models` tu file mau vao `workspace\settings.yaml`:
+Them cac bien nay vao `.env` cua source, vi du
+`workspace_sources\book\.env`. Template config nam o `templates\settings.yaml`.
 
 ```dotenv
 LOCAL_LLM_API_BASE=http://127.0.0.1:11434/v1
 LOCAL_EMBEDDING_API_BASE=http://127.0.0.1:11434/v1
 LOCAL_LLM_API_KEY=local
-LOCAL_CHAT_MODEL=qwen2.5:7b
+LOCAL_INDEX_CHAT_MODEL=qwen3:8b
+LOCAL_QUERY_CHAT_MODEL=qwen3:14b
 LOCAL_EMBEDDING_MODEL=nomic-embed-text
 ```
 
@@ -94,55 +134,52 @@ Kiem tra server:
 Invoke-RestMethod http://127.0.0.1:8000/health
 ```
 
-Neu chua init workspace bang CLI, co the init bang API:
+Kiem tra source:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/workspace/status?source=book"
+Invoke-RestMethod "http://127.0.0.1:8000/workspace/status?source=contoso_atlas"
+```
+
+Them document vao mot source qua API:
 
 ```powershell
 Invoke-RestMethod `
   -Method Post `
-  -Uri http://127.0.0.1:8000/workspace/init `
+  -Uri http://127.0.0.1:8000/documents/text `
   -ContentType "application/json" `
-  -Body '{"model":"gpt-4.1-mini","embedding":"text-embedding-3-small","force":false}'
+  -Body '{"source":"book","filename":"book.txt","text":"Your text here","overwrite":true}'
 ```
 
-Neu workspace da co `settings.yaml` va muon tao lai config, doi `force` thanh `true`.
-
-Them sample document:
-
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "http://127.0.0.1:8000/documents/sample?overwrite=true"
-```
-
-Index du lieu. Buoc nay se goi LLM va co the ton chi phi:
-
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:8000/index `
-  -ContentType "application/json" `
-  -Body '{"method":"fast","verbose":true,"cache":true}'
-```
-
-Query:
+Query mot source cu the:
 
 ```powershell
 Invoke-RestMethod `
   -Method Post `
   -Uri http://127.0.0.1:8000/query `
   -ContentType "application/json" `
-  -Body '{"question":"Who owns supplier integrations?","method":"local","response_type":"Single Sentence"}'
+  -Body '{"source":"contoso_atlas","question":"Who owns supplier integrations?","method":"local","response_type":"Single Sentence"}'
+```
+
+Response se co truong `answer` de hien thi cho nguoi dung. Truong `stdout` va
+`stderr` van duoc giu lai de debug GraphRAG CLI.
+
+```json
+{
+  "answer": "Jonah Reed owns supplier integrations.",
+  "stdout": "Jonah Reed owns supplier integrations [Data: Sources (0)].\n"
+}
 ```
 
 ## Endpoint chinh
 
 - `GET /health`: kiem tra server.
-- `GET /workspace/status`: xem workspace, input files, output moi nhat.
-- `POST /workspace/init`: goi `graphrag init --root workspace`.
-- `POST /documents/sample`: tao file sample trong `workspace/input`.
-- `POST /documents/text`: them file `.txt` tuy y vao `workspace/input`.
-- `POST /index`: goi `graphrag index`.
-- `POST /query`: goi `graphrag query`.
+- `GET /workspace/status?source=book`: xem workspace, input files, output moi nhat.
+- `POST /workspace/init`: goi `graphrag init`, bat buoc truyen `source`.
+- `POST /documents/sample?source=contoso_atlas`: tao file sample cho source.
+- `POST /documents/text`: them file `.txt` tuy y vao source.
+- `POST /index`: goi `graphrag index`, bat buoc truyen `source`.
+- `POST /query`: goi `graphrag query`, bat buoc truyen `source`.
 
 ## Luu y
 

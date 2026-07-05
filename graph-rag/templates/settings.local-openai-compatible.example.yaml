@@ -5,14 +5,25 @@
 ### - LM Studio local server: http://127.0.0.1:1234/v1
 ### - vLLM OpenAI-compatible server: http://127.0.0.1:8001/v1
 ###
-### Copy the relevant model sections into workspace/settings.yaml after your
-### local model server is running. Keep workspace/settings.yaml as the real
-### runtime config; this file is only a reference.
+### Copy the relevant model sections into a source settings file after your
+### local model server is running, e.g.
+### workspace_sources/book/settings.yaml. Keep this file as a reference only.
 
 completion_models:
-  default_completion_model:
+  indexing_completion_model:
     model_provider: openai
-    model: ${LOCAL_CHAT_MODEL}
+    model: ${LOCAL_INDEX_CHAT_MODEL}
+    auth_method: api_key
+    api_key: ${LOCAL_LLM_API_KEY}
+    api_base: ${LOCAL_LLM_API_BASE}
+    retry:
+      type: exponential_backoff
+      max_retries: 3
+    call_args:
+      temperature: 0
+  query_completion_model:
+    model_provider: openai
+    model: ${LOCAL_QUERY_CHAT_MODEL}
     auth_method: api_key
     api_key: ${LOCAL_LLM_API_KEY}
     api_base: ${LOCAL_LLM_API_BASE}
@@ -38,5 +49,6 @@ embedding_models:
 ### LOCAL_LLM_API_BASE=http://127.0.0.1:11434/v1
 ### LOCAL_EMBEDDING_API_BASE=http://127.0.0.1:11434/v1
 ### LOCAL_LLM_API_KEY=local
-### LOCAL_CHAT_MODEL=qwen2.5:7b
+### LOCAL_INDEX_CHAT_MODEL=qwen3:8b
+### LOCAL_QUERY_CHAT_MODEL=qwen3:14b
 ### LOCAL_EMBEDDING_MODEL=nomic-embed-text

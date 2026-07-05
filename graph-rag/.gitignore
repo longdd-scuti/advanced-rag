@@ -2,10 +2,11 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-workspace/.env
-workspace/cache/
-workspace/logs/
-workspace/output/
-workspace/update_output/
-workspace/stats/
+workspace_sources/*/.env
+workspace_sources/*/input/*.txt
+workspace_sources/*/cache/
+workspace_sources/*/logs/
+workspace_sources/*/output/
+workspace_sources/*/update_output/
+workspace_sources/*/stats/
 
